@@ -1,42 +1,26 @@
-# HSWare Post MCP v2.1 — Cloudflare Workers
+# HSWare Post MCP — Public Submission v3.0
 
-This version is built specifically for Cloudflare Workers and does not require a custom domain or paid hosting.
+Cloudflare Worker MCP service prepared as a public-submission candidate for HSWare Post.
 
-## Deploy from GitHub in Cloudflare
+## Deploy
+```bash
+npm install
+npm run check
+npx wrangler deploy
+```
 
-1. Upload the contents of this folder to the ROOT of your GitHub repository.
-2. In Cloudflare Workers & Pages, connect the repository.
-3. Project name: `hsware-post-plugin`
-4. Build command: leave blank.
-5. Deploy command: `npx wrangler deploy`
-6. Keep Cloudflare Access OFF while connecting ChatGPT.
-7. Deploy.
-
-Cloudflare will provide a free `workers.dev` URL. Use the MCP endpoint:
-
-`https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/mcp`
-
-## ChatGPT New Plugin
-
-- Name: `HSWare Post`
-- Description: `Generate and validate HSWare software-post JSON`
-- Connection: Server URL
-- Server URL: your `/mcp` workers.dev URL
-- Authentication: choose **No authentication / None** if the ChatGPT form provides it.
+No custom domain is required; Cloudflare's `workers.dev` hostname can serve the MCP and policy pages.
 
 ## Endpoints
-
-- `/` status
-- `/health` health check
-- `/mcp` Streamable HTTP MCP endpoint
-- `/sse` compatibility alias routed to the same MCP handler
+- `/mcp` — remote MCP endpoint
+- `/health` — service health
+- `/privacy` — public privacy policy
+- `/terms` — public terms of service
+- `/support` — public support page
 
 ## MCP tools
-
 - `get_hsware_contract`
 - `validate_hsware_json`
 - `hsware_health`
 
-## Notes
-
-The runtime HSWare prompt remains authoritative. This Worker contains the HSWare specification and deterministic checks for common blocking validation errors.
+See `PUBLIC-SUBMISSION.md` before submitting the app for directory review.
