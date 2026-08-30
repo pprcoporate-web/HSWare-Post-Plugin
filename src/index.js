@@ -1,7 +1,9 @@
 import { HSWARE_SPEC, contractSummary, validateCandidate } from './hsware.js';
 
-const VERSION = '3.0.0';
+const VERSION = '3.1.0';
 const SERVER_INFO = { name: 'hsware-post', version: VERSION };
+const DEVELOPER = 'Hammad Shujra';
+const CATEGORY = 'Productivity';
 
 const APP_NAME = 'HSWare Post';
 const APP_DESCRIPTION = 'Generate and validate HSWare software-post JSON using the HSWare runtime contract.';
@@ -10,7 +12,7 @@ const TOOLS = [
   {
     name: 'get_hsware_contract',
     title: 'Get HSWare Runtime Contract',
-    description: 'Read the HSWare production rules and interpret the supplied runtime prompt before generating HSWare JSON. This is a read-only action and does not modify external data.',
+    description: 'Read the HSWare production rules using an input-first, research-gaps-only workflow. Supplied structured facts are authoritative unless the user asks for verification. This is read-only.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -76,7 +78,7 @@ async function handleRpc(msg) {
       protocolVersion: params.protocolVersion || '2025-06-18',
       capabilities: { tools: { listChanged: false } },
       serverInfo: SERVER_INFO,
-      instructions: 'Use get_hsware_contract before HSWare generation and validate_hsware_json before final output. The runtime prompt is authoritative.'
+      instructions: 'Use get_hsware_contract before generation and validate_hsware_json before final output. Input-first workflow: preserve supplied structured facts and research only genuinely missing required fields.'
     });
   }
   if (method === 'notifications/initialized') return null;
@@ -105,7 +107,7 @@ async function handleRpc(msg) {
         return rpcResult(id, { content: textContent(payload), structuredContent: payload, isError: false });
       }
       if (name === 'hsware_health') {
-        const payload = { ok: true, name: 'HSWare Post MCP', version: VERSION, runtime: 'Cloudflare Workers' };
+        const payload = { ok: true, name: 'HSWare Post MCP', developer: DEVELOPER, category: CATEGORY, version: VERSION, runtime: 'Cloudflare Workers' };
         return rpcResult(id, { content: textContent(payload), structuredContent: payload, isError: false });
       }
       return rpcResult(id, { content: textContent({ error: `Unknown tool: ${name}` }), isError: true });
@@ -155,9 +157,9 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === '/') {
-      return json({ name: APP_NAME, description: APP_DESCRIPTION, version: VERSION, status: 'ok', mcp: '/mcp', health: '/health', privacy: '/privacy', terms: '/terms', support: '/support' });
+      return json({ name: APP_NAME, description: APP_DESCRIPTION, developer: DEVELOPER, category: CATEGORY, version: VERSION, status: 'ok', mcp: '/mcp', health: '/health', privacy: '/privacy', terms: '/terms', support: '/support' });
     }
-    if (url.pathname === '/health') return json({ ok: true, name: APP_NAME, version: VERSION, runtime: 'Cloudflare Workers' });
+    if (url.pathname === '/health') return json({ ok: true, name: APP_NAME, developer: DEVELOPER, category: CATEGORY, version: VERSION, runtime: 'Cloudflare Workers' });
     if (url.pathname === '/privacy') return privacyPage();
     if (url.pathname === '/terms') return termsPage();
     if (url.pathname === '/support') return supportPage();

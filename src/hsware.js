@@ -47,21 +47,22 @@ Do not return null values. Use empty strings for unknown scalar facts when the r
 
 Before responding, internally validate the entire object and repair any failed field.
 
-## Research First
+## Input First, Research Gaps Only
 
-When web access is available, research the software before writing.
+Speed is a production requirement. The supplied Software Data / Research Seed is the primary authoritative dataset for the current job. Parse it first, lock every explicitly supplied structured fact, identify only genuinely missing fields required by the active HSWare panels, and research only those gaps.
 
-Use this source priority:
-1. official developer/product website
-2. official documentation
-3. official release notes or changelog
-4. official repository
-5. trustworthy package-manager metadata
-6. reputable secondary sources only when official information is unavailable
+Do NOT browse, search, or re-verify a field merely because web access exists. If the user supplied a version, update date, file size, hash, developer, publisher, architecture, installer type, system requirement, official URL, direct download URL, old-version number/date/URL, or other structured value, preserve it exactly unless the user explicitly asks for verification or correction.
 
-The supplied Software Data / Research Seed is a factual starting dataset, not prose to rewrite.
-
-Treat explicitly supplied structured values as primary data. Do not silently replace a supplied value unless authoritative official evidence clearly shows it is wrong or stale.
+Default workflow:
+1. Parse the runtime prompt and supplied seed once.
+2. Lock supplied structured facts and URLs.
+3. Determine which required active-panel fields are actually missing.
+4. If no critical fields are missing, skip factual web research and write immediately.
+5. If critical fields are missing, use one focused research pass for only those gaps.
+6. Prefer official developer/product sources, official documentation, release notes/changelog, official repositories, then trustworthy package-manager metadata. Use reputable secondary sources only when official information is unavailable.
+7. Generate the complete JSON once.
+8. Validate locally without triggering new research.
+9. If validation fails, repair only the failed field or section when possible; do not restart research or regenerate the entire article unnecessarily.
 
 Never invent:
 - versions
@@ -74,9 +75,21 @@ Never invent:
 - licenses
 - WordPress categories
 
-If a factual value cannot be verified, preserve an explicitly supplied value or use the empty value allowed by the runtime schema.
+If an unsupplied factual value cannot be verified and the runtime schema permits an empty value, use the empty value instead of spending repeated research passes.
 
-A supplied Description is only a factual clue. Do not copy it sentence-for-sentence into generated prose.
+A supplied Description is a factual clue, not prose to copy sentence-for-sentence. Rewrite it naturally while preserving its factual meaning.
+
+### Research trigger rules
+
+Research is allowed when:
+- a required active-panel fact is missing;
+- the user explicitly asks to verify or refresh supplied data;
+- the supplied seed itself marks a fact as unknown, incomplete, or uncertain and the field is needed;
+- fresh context is necessary to write an accurate section that cannot be supported by the supplied dataset.
+
+Research is NOT required merely to confirm already supplied metadata. Do not follow or inspect every supplied download link just to prove it exists. Do not replace a supplied direct URL with a different mirror unless explicitly requested.
+
+When old-version data is partial, research only the missing component needed by the runtime schema. Example: if version and URL are supplied but date is missing, search only for the date; preserve the supplied version and URL.
 
 ## Writing Style
 
@@ -619,7 +632,9 @@ export function contractSummary(runtimePrompt = '') {
     runtime,
     instructions: [
       'Treat the current HSWare runtime prompt as authoritative for enabled panels, exact JSON schema, counts, locked URLs, categories, internal links and supplied facts.',
-      'Research official sources first when web access is available; never invent technical facts or URLs.',
+      'INPUT-FIRST FAST WORKFLOW: lock and preserve every explicitly supplied structured fact and URL. Do not research or re-verify supplied fields unless the user explicitly requests verification or correction.',
+      'Research gaps only: identify missing facts required by active panels and make at most one focused research pass by default. If no critical facts are missing, skip factual web research.',
+      'Validate locally without new research. Repair only failed fields or sections instead of restarting research or regenerating the entire article.',
       'Generate only keys present in the runtime JSON template and omit disabled-panel keys.',
       'Before final output, validate every hard word/count gate and exact focus-keyword density.',
       'Target focus-keyword density at 1.0%-1.2%; never exceed the HSWare hard maximum of 2.2%.',

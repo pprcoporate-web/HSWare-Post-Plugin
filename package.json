@@ -1,9 +1,9 @@
 {
   "name": "hsware-post-mcp-worker",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": true,
   "type": "module",
-  "description": "HSWare Post public-submission candidate MCP server for Cloudflare Workers.",
+  "description": "HSWare Post fast input-first MCP server for Cloudflare Workers.",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

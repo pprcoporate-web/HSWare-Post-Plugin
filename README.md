@@ -1,26 +1,29 @@
-# HSWare Post MCP — Public Submission v3.0
+# HSWare Post MCP v3.1
 
-Cloudflare Worker MCP service prepared as a public-submission candidate for HSWare Post.
+Developer: **Hammad Shujra**  
+Category: **Productivity**  
+Version: **3.1.0**
+
+Cloudflare Workers remote MCP server for the HSWare HSAI workflow.
+
+## v3.1 Fast Workflow
+
+- Input-first: user-supplied structured software data is authoritative for the job.
+- No redundant web verification of supplied versions, dates, hashes, requirements, or URLs.
+- Research only genuinely missing fields required by active HSWare panels.
+- One focused research pass by default.
+- Local validation does not trigger research.
+- Repair only failed fields/sections instead of regenerating the whole article.
+- Existing HSWare word-count, JSON, URL, feature, FAQ, category, ALT, and keyword-density gates remain in force.
 
 ## Deploy
-```bash
-npm install
-npm run check
-npx wrangler deploy
-```
 
-No custom domain is required; Cloudflare's `workers.dev` hostname can serve the MCP and policy pages.
+Push these files to the existing GitHub repository connected to Cloudflare Workers. Cloudflare can redeploy using `npx wrangler deploy`. The Worker name remains `hsware-post-plugin`, so the existing `/mcp` endpoint can remain unchanged.
 
 ## Endpoints
-- `/mcp` — remote MCP endpoint
-- `/health` — service health
-- `/privacy` — public privacy policy
-- `/terms` — public terms of service
-- `/support` — public support page
 
-## MCP tools
-- `get_hsware_contract`
-- `validate_hsware_json`
-- `hsware_health`
-
-See `PUBLIC-SUBMISSION.md` before submitting the app for directory review.
+- `/mcp` — MCP endpoint
+- `/health` — health/version metadata
+- `/privacy` — privacy policy
+- `/terms` — terms
+- `/support` — support
