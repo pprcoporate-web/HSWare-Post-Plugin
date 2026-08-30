@@ -1,0 +1,15 @@
+{
+  "name": "hsware-post-mcp-worker",
+  "version": "2.1.0",
+  "private": true,
+  "type": "module",
+  "description": "HSWare Post remote MCP server for Cloudflare Workers.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "node --check src/index.js && node --check src/hsware.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.127.1"
+  }
+}

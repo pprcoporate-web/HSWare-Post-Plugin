@@ -1,32 +1,42 @@
-# HSWare Post Plugin v1.0
+# HSWare Post MCP v2.1 — Cloudflare Workers
 
-A skills-only ChatGPT/Codex plugin for generating research-first, HSWare-compatible software-post JSON.
+This version is built specifically for Cloudflare Workers and does not require a custom domain or paid hosting.
 
-## Included
+## Deploy from GitHub in Cloudflare
 
-- Native plugin manifest: `plugins/hsware-post-plugin/.codex-plugin/plugin.json`
-- HSWare skill: `plugins/hsware-post-plugin/skills/hsware-post/SKILL.md`
-- Validation reference and local JSON validator
-- GitHub marketplace manifest: `.agents/plugins/marketplace.json`
+1. Upload the contents of this folder to the ROOT of your GitHub repository.
+2. In Cloudflare Workers & Pages, connect the repository.
+3. Project name: `hsware-post-plugin`
+4. Build command: leave blank.
+5. Deploy command: `npx wrangler deploy`
+6. Keep Cloudflare Access OFF while connecting ChatGPT.
+7. Deploy.
 
-## Upload to GitHub
+Cloudflare will provide a free `workers.dev` URL. Use the MCP endpoint:
 
-Upload the contents of this ZIP to the root of a GitHub repository. Keep the hidden `.agents` and `.codex-plugin` directories exactly as included.
+`https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/mcp`
 
-Before wider distribution, replace the placeholder `homepage`, `repository`, and author URL values in `plugin.json` with your real project URLs. Add your logo under the plugin `assets/` folder and then set `interface.logo` and `interface.composerIcon` if desired.
+## ChatGPT New Plugin
 
-## GitHub marketplace import
+- Name: `HSWare Post`
+- Description: `Generate and validate HSWare software-post JSON`
+- Connection: Server URL
+- Server URL: your `/mcp` workers.dev URL
+- Authentication: choose **No authentication / None** if the ChatGPT form provides it.
 
-OpenAI currently supports importing `.agents/plugins/marketplace.json` from GitHub for eligible workspace admins. In ChatGPT, the admin enters the repository URL and leaves Path blank when the marketplace is at the repository root.
+## Endpoints
 
-A public GitHub repository does not by itself make the plugin universally searchable in the public Plugin Directory. Distribution and publishing depend on OpenAI account/workspace permissions and directory programs.
+- `/` status
+- `/health` health check
+- `/mcp` Streamable HTTP MCP endpoint
+- `/sse` compatibility alias routed to the same MCP handler
 
-## Local validator
+## MCP tools
 
-Example:
+- `get_hsware_contract`
+- `validate_hsware_json`
+- `hsware_health`
 
-```bash
-python plugins/hsware-post-plugin/scripts/validate_post_json.py output.json --focus-keyword "Discord"
-```
+## Notes
 
-The runtime HSWare prompt remains authoritative. The helper validator cannot know every future HSWare panel-specific density denominator unless that behavior is encoded in the runtime contract.
+The runtime HSWare prompt remains authoritative. This Worker contains the HSWare specification and deterministic checks for common blocking validation errors.
