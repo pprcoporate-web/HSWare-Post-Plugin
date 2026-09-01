@@ -24,6 +24,18 @@ The HSWare prompt supplied in the current conversation is the runtime contract. 
 
 Never replace the runtime contract with assumptions from this skill.
 
+## Operating Modes
+
+FAST mode is the default production workflow:
+- call the HSWare preparation tool once
+- preserve supplied structured facts and URLs
+- make at most one focused research pass for genuinely missing critical facts
+- generate the complete JSON once
+- validate internally and repair only a failed field
+- do not call the external validation tool automatically
+
+STRICT mode is opt-in. Use it only when the user explicitly requests deep verification, link-by-link checking, or strict tool validation. Strict mode may take substantially longer.
+
 ## Output Contract
 
 Return JSON only.
@@ -626,20 +638,31 @@ export function validateCandidate({ candidateJson, runtimePrompt = '', focusKeyw
   };
 }
 
-export function contractSummary(runtimePrompt = '') {
+const FAST_CONTRACT_INSTRUCTIONS = [
+  'The current HSWare runtime prompt is authoritative for enabled panels, exact JSON schema, counts, locked URLs, categories, internal links and supplied facts.',
+  'INPUT FIRST: preserve every explicitly supplied structured fact and URL. Do not re-research or re-verify supplied fields unless the user explicitly requests it.',
+  'Research only genuinely missing critical facts required by active panels. Use at most one focused research pass and prefer official sources. Do not inspect every supplied link.',
+  'Generate the complete JSON once. Perform one internal validation pass and repair only a failed field or section. Do not restart research or regenerate the whole article.',
+  'Return exactly one valid JSON object using only keys from the runtime template. Omit disabled panels, explanations, Markdown fences and citations outside JSON.',
+  'Keep every URL as one raw HTTP/HTTPS string. Preserve locked URLs character-for-character.',
+  'Target exact focus-keyword density around 1.0%-1.2% and remain inside the HSWare hard range of 0.6%-2.2%.',
+  'Obey all runtime word counts, feature/FAQ/category/tag/ALT counts and internal-link placement rules.'
+];
+
+export function contractSummary(runtimePrompt = '', requestedMode = 'fast') {
   const runtime = parseRuntime(runtimePrompt);
-  return {
+  const mode = requestedMode === 'strict' ? 'strict' : 'fast';
+  const result = {
+    mode,
     runtime,
-    instructions: [
-      'Treat the current HSWare runtime prompt as authoritative for enabled panels, exact JSON schema, counts, locked URLs, categories, internal links and supplied facts.',
-      'INPUT-FIRST FAST WORKFLOW: lock and preserve every explicitly supplied structured fact and URL. Do not research or re-verify supplied fields unless the user explicitly requests verification or correction.',
-      'Research gaps only: identify missing facts required by active panels and make at most one focused research pass by default. If no critical facts are missing, skip factual web research.',
-      'Validate locally without new research. Repair only failed fields or sections instead of restarting research or regenerating the entire article.',
-      'Generate only keys present in the runtime JSON template and omit disabled-panel keys.',
-      'Before final output, validate every hard word/count gate and exact focus-keyword density.',
-      'Target focus-keyword density at 1.0%-1.2%; never exceed the HSWare hard maximum of 2.2%.',
-      'Feature descriptions: when FAQ is enabled, never below 35 words; when FAQ is disabled, never below 60 words. Respect runtime targets if stricter.',
-      'Return one valid JSON object. Repair malformed JSON, unescaped quotes, invalid URLs and other blockers before finalizing.'
-    ]
+    instructions: FAST_CONTRACT_INSTRUCTIONS,
+    research_budget: mode === 'fast' ? 'one focused pass for missing critical facts only' : 'deep verification as explicitly requested',
+    validation: mode === 'fast' ? 'internal single pass; do not call validate_hsware_json' : 'call validate_hsware_json once after drafting when strict validation was requested',
+    next_action: mode === 'fast'
+      ? 'Generate and return the final JSON now. Do not call another HSWare tool in this request.'
+      : 'Use the full specification, perform the requested verification, draft the JSON, then call validate_hsware_json once.'
   };
+
+  if (mode === 'strict') result.full_specification = HSWARE_SPEC;
+  return result;
 }

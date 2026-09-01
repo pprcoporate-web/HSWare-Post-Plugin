@@ -1,22 +1,28 @@
-import { HSWARE_SPEC, contractSummary, validateCandidate } from './hsware.js';
+import { contractSummary, validateCandidate } from './hsware.js';
 
-const VERSION = '3.1.0';
+const VERSION = '3.2.0';
 const SERVER_INFO = { name: 'hsware-post', version: VERSION };
 const DEVELOPER = 'Hammad Shujra';
 const CATEGORY = 'Productivity';
 
 const APP_NAME = 'HSWare Post';
-const APP_DESCRIPTION = 'Generate and validate HSWare software-post JSON using the HSWare runtime contract.';
+const APP_DESCRIPTION = 'Generate HSWare software-post JSON with a fast default workflow and optional strict validation.';
 
 const TOOLS = [
   {
     name: 'get_hsware_contract',
-    title: 'Get HSWare Runtime Contract',
-    description: 'Read the HSWare production rules using an input-first, research-gaps-only workflow. Supplied structured facts are authoritative unless the user asks for verification. This is read-only.',
+    title: 'Prepare HSWare Generation',
+    description: 'Call once before generating HSWare JSON. FAST is the default: preserve supplied facts, research only critical gaps in one focused pass, generate immediately, and do not call another HSWare tool. Use STRICT only when the user explicitly requests deep verification or strict tool validation. Read-only.',
     inputSchema: {
       type: 'object',
       properties: {
-        runtime_prompt: { type: 'string', description: 'Complete HSWare HSAI runtime prompt.' }
+        runtime_prompt: { type: 'string', description: 'Complete HSWare HSAI runtime prompt.' },
+        mode: {
+          type: 'string',
+          enum: ['fast', 'strict'],
+          default: 'fast',
+          description: 'Use fast unless the user explicitly asks for strict or deep verification.'
+        }
       },
       required: ['runtime_prompt'],
       additionalProperties: false
@@ -25,7 +31,7 @@ const TOOLS = [
   {
     name: 'validate_hsware_json',
     title: 'Validate HSWare JSON',
-    description: 'Validate candidate HSWare JSON for syntax, common hard gates, URLs, enabled panels, feature lengths, and focus-keyword density. This is a read-only validation action.',
+    description: 'Validate HSWare JSON only when the user supplies a candidate for checking or explicitly requests strict/deep validation. Never call this automatically during normal fast generation. Read-only.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -78,7 +84,7 @@ async function handleRpc(msg) {
       protocolVersion: params.protocolVersion || '2025-06-18',
       capabilities: { tools: { listChanged: false } },
       serverInfo: SERVER_INFO,
-      instructions: 'Use get_hsware_contract before generation and validate_hsware_json before final output. Input-first workflow: preserve supplied structured facts and research only genuinely missing required fields.'
+      instructions: 'FAST MODE IS DEFAULT. For a generation request, call get_hsware_contract exactly once with mode fast, then generate the final JSON immediately. Do not call validate_hsware_json in the same request unless the user explicitly asks for strict/deep validation or provides candidate JSON to validate. Preserve supplied structured facts and URLs. Research only genuinely missing critical fields, using at most one focused pass. Do not inspect every supplied link. Return JSON only.'
     });
   }
   if (method === 'notifications/initialized') return null;
@@ -92,8 +98,11 @@ async function handleRpc(msg) {
         if (typeof args.runtime_prompt !== 'string' || !args.runtime_prompt.trim()) {
           return rpcResult(id, { content: textContent({ error: 'runtime_prompt is required' }), isError: true });
         }
-        const payload = { ...contractSummary(args.runtime_prompt), full_specification: HSWARE_SPEC };
-        return rpcResult(id, { content: textContent(payload), structuredContent: payload, isError: false });
+        const mode = args.mode === 'strict' ? 'strict' : 'fast';
+        const payload = contractSummary(args.runtime_prompt, mode);
+        // The contract is returned once as text. Duplicating the full payload in
+        // structuredContent makes the model ingest the same instructions twice.
+        return rpcResult(id, { content: textContent(payload), isError: false });
       }
       if (name === 'validate_hsware_json') {
         if (typeof args.candidate_json !== 'string') {
@@ -107,7 +116,7 @@ async function handleRpc(msg) {
         return rpcResult(id, { content: textContent(payload), structuredContent: payload, isError: false });
       }
       if (name === 'hsware_health') {
-        const payload = { ok: true, name: 'HSWare Post MCP', developer: DEVELOPER, category: CATEGORY, version: VERSION, runtime: 'Cloudflare Workers' };
+        const payload = { ok: true, name: 'HSWare Post MCP', developer: DEVELOPER, category: CATEGORY, version: VERSION, runtime: 'Cloudflare Workers', default_mode: 'fast' };
         return rpcResult(id, { content: textContent(payload), structuredContent: payload, isError: false });
       }
       return rpcResult(id, { content: textContent({ error: `Unknown tool: ${name}` }), isError: true });
@@ -131,7 +140,7 @@ function termsPage() {
 }
 
 function supportPage() {
-  return htmlPage('Support', `<h1>HSWare Post Support</h1><p>HSWare Post provides the HSWare runtime contract and JSON validation through a public MCP endpoint.</p><h2>Connection</h2><p>MCP endpoint: <code>/mcp</code></p><h2>Before reporting a problem</h2><p>Confirm the MCP server is reachable at <a href="/health">/health</a>, then retry the action. Never include passwords, API keys, or private credentials in a support report.</p><h2>Project source</h2><p>Use the public HSWare Post GitHub repository used to deploy this service for issue reporting and project updates. Add the final repository URL to the submission metadata before submitting to OpenAI.</p>`);
+  return htmlPage('Support', `<h1>HSWare Post Support</h1><p>HSWare Post provides fast-default HSWare preparation and optional JSON validation through a public MCP endpoint.</p><h2>Modes</h2><p><strong>Fast</strong> is the default for normal generation. <strong>Strict</strong> is used only when deep verification or tool validation is explicitly requested.</p><h2>Connection</h2><p>MCP endpoint: <code>/mcp</code></p><h2>Before reporting a problem</h2><p>Confirm the MCP server is reachable at <a href="/health">/health</a>, then retry the action. Never include passwords, API keys, or private credentials in a support report.</p><h2>Project source</h2><p>Use the public HSWare Post GitHub repository used to deploy this service for issue reporting and project updates. Add the final repository URL to the submission metadata before submitting to OpenAI.</p>`);
 }
 
 async function handleMcp(request) {
@@ -157,9 +166,9 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === '/') {
-      return json({ name: APP_NAME, description: APP_DESCRIPTION, developer: DEVELOPER, category: CATEGORY, version: VERSION, status: 'ok', mcp: '/mcp', health: '/health', privacy: '/privacy', terms: '/terms', support: '/support' });
+      return json({ name: APP_NAME, description: APP_DESCRIPTION, developer: DEVELOPER, category: CATEGORY, version: VERSION, status: 'ok', default_mode: 'fast', mcp: '/mcp', health: '/health', privacy: '/privacy', terms: '/terms', support: '/support' });
     }
-    if (url.pathname === '/health') return json({ ok: true, name: APP_NAME, developer: DEVELOPER, category: CATEGORY, version: VERSION, runtime: 'Cloudflare Workers' });
+    if (url.pathname === '/health') return json({ ok: true, name: APP_NAME, developer: DEVELOPER, category: CATEGORY, version: VERSION, runtime: 'Cloudflare Workers', default_mode: 'fast' });
     if (url.pathname === '/privacy') return privacyPage();
     if (url.pathname === '/terms') return termsPage();
     if (url.pathname === '/support') return supportPage();
