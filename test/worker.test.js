@@ -30,8 +30,9 @@ test('initialize advertises fast mode without mandatory validation', async () =>
   const { response, body } = await rpc('initialize', { protocolVersion: '2025-06-18' });
   assert.equal(response.status, 200);
   assert.match(body.result.instructions, /FAST MODE IS DEFAULT/);
-  assert.match(body.result.instructions, /Do not call validate_hsware_json/);
-  assert.equal(body.result.serverInfo.version, '3.2.0');
+  assert.match(body.result.instructions, /NO-BROWSE PATH/);
+  assert.match(body.result.instructions, /do not call validate_hsware_json/i);
+  assert.equal(body.result.serverInfo.version, '3.2.1');
 });
 
 test('tool schema defaults contract preparation to fast mode', async () => {
@@ -58,7 +59,9 @@ test('fast contract is compact and ends the tool chain', async () => {
   assert.equal(response.status, 200);
   assert.equal(payload.mode, 'fast');
   assert.equal(payload.full_specification, undefined);
-  assert.match(payload.next_action, /Do not call another HSWare tool/);
+  assert.match(payload.next_action, /Do not call another HSWare tool, browser, web-search/);
+  assert.match(payload.research_budget, /none/);
+  assert.match(payload.latency_target, /sub-30-second/);
   assert.equal(body.result.structuredContent, undefined);
   assert.ok(new TextEncoder().encode(serialized).length < 5_000);
   assert.ok(elapsedMs < 250, `local fast contract took ${elapsedMs.toFixed(1)} ms`);
@@ -73,6 +76,7 @@ test('strict mode retains the full specification on explicit request', async () 
 
   assert.equal(payload.mode, 'strict');
   assert.match(payload.full_specification, /# HSWare Post Skill/);
+  assert.match(payload.full_specification, /exactly 2 category NAME strings/);
   assert.match(payload.next_action, /validate_hsware_json once/);
 });
 
@@ -88,11 +92,23 @@ test('validator remains available for explicit candidate checks', async () => {
   assert.ok(payload.errors.some(error => error.includes('raw HTTP/HTTPS URL')));
 });
 
+test('validator follows the runtime category count', async () => {
+  const candidate = JSON.stringify({ seo: { category_suggestions: ['Cloud Storage Clients'] } });
+  const customRuntimePrompt = 'Enabled: seo. Return exactly 3 category NAME strings.';
+  const { body } = await rpc('tools/call', {
+    name: 'validate_hsware_json',
+    arguments: { candidate_json: candidate, runtime_prompt: customRuntimePrompt }
+  });
+  const payload = toolPayload(body);
+
+  assert.ok(payload.errors.some(error => error.includes('expected 3')));
+});
+
 test('health endpoint reports the fast default release', async () => {
   const response = await worker.fetch(new Request('https://hsware.test/health'));
   const body = await response.json();
 
   assert.equal(response.status, 200);
-  assert.equal(body.version, '3.2.0');
+  assert.equal(body.version, '3.2.1');
   assert.equal(body.default_mode, 'fast');
 });

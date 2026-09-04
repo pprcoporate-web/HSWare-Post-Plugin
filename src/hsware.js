@@ -24,12 +24,24 @@ The HSWare prompt supplied in the current conversation is the runtime contract. 
 
 Never replace the runtime contract with assumptions from this skill.
 
+For the current HSWare 3.0.3 WordPress Apply workflow, the normal contract is:
+- exactly 2 category NAME strings when \`seo\` is enabled
+- one normal-prose \`overview.third_paragraph\` benefits paragraph, not bullets
+- at least 5 FAQ items when \`faq\` is enabled
+- field-specific length gates; there is no required total article word count
+- target Focus Keyword density of 1.0%-1.2%, with a strict generation ceiling of 2.0%
+
+If the current runtime prompt explicitly supplies a different count or range, that
+runtime instruction wins. Never silently revert to the older 3-category or
+bullet-benefits contract.
+
 ## Operating Modes
 
 FAST mode is the default production workflow:
 - call the HSWare preparation tool once
 - preserve supplied structured facts and URLs
-- make at most one focused research pass for genuinely missing critical facts
+- do not browse, search, inspect supplied links, or re-verify supplied facts
+- use empty strings for permitted factual values that are not supplied
 - generate the complete JSON once
 - validate internally and repair only a failed field
 - do not call the external validation tool automatically
@@ -59,22 +71,21 @@ Do not return null values. Use empty strings for unknown scalar facts when the r
 
 Before responding, internally validate the entire object and repair any failed field.
 
-## Input First, Research Gaps Only
+## Input First; Research Only in Strict Mode
 
-Speed is a production requirement. The supplied Software Data / Research Seed is the primary authoritative dataset for the current job. Parse it first, lock every explicitly supplied structured fact, identify only genuinely missing fields required by the active HSWare panels, and research only those gaps.
+Speed is a production requirement. The supplied Software Data / Research Seed is the primary authoritative dataset for the current job. Parse it once, lock every explicitly supplied structured fact, and use empty strings for permitted missing scalar values in FAST mode.
 
 Do NOT browse, search, or re-verify a field merely because web access exists. If the user supplied a version, update date, file size, hash, developer, publisher, architecture, installer type, system requirement, official URL, direct download URL, old-version number/date/URL, or other structured value, preserve it exactly unless the user explicitly asks for verification or correction.
 
-Default workflow:
+FAST workflow:
 1. Parse the runtime prompt and supplied seed once.
 2. Lock supplied structured facts and URLs.
-3. Determine which required active-panel fields are actually missing.
-4. If no critical fields are missing, skip factual web research and write immediately.
-5. If critical fields are missing, use one focused research pass for only those gaps.
-6. Prefer official developer/product sources, official documentation, release notes/changelog, official repositories, then trustworthy package-manager metadata. Use reputable secondary sources only when official information is unavailable.
-7. Generate the complete JSON once.
-8. Validate locally without triggering new research.
-9. If validation fails, repair only the failed field or section when possible; do not restart research or regenerate the entire article unnecessarily.
+3. Do not browse or inspect supplied links; use empty strings for permitted missing facts.
+4. Generate the complete JSON once.
+5. Validate locally without triggering new research.
+6. If validation fails, repair only the failed field or section when possible; do not restart research or regenerate the entire article.
+
+STRICT workflow may perform a focused or deep research pass only when the user explicitly requests verification, refresh, or strict validation. Prefer official developer/product sources, official documentation, release notes/changelog, official repositories, then trustworthy package-manager metadata. Use reputable secondary sources only when official information is unavailable.
 
 Never invent:
 - versions
@@ -91,7 +102,7 @@ If an unsupplied factual value cannot be verified and the runtime schema permits
 
 A supplied Description is a factual clue, not prose to copy sentence-for-sentence. Rewrite it naturally while preserving its factual meaning.
 
-### Research trigger rules
+### Strict-mode research trigger rules
 
 Research is allowed when:
 - a required active-panel fact is missing;
@@ -176,17 +187,19 @@ Avoid generic headings such as "About the Software".
 
 ### overview.intro
 One paragraph.
-Target 95-115 words.
+Target 100-110 words to leave a safety buffer.
 Hard HSWare quality range: 90-125 words.
 First sentence states exactly what the software is or does.
 Cover purpose, users/workflow, and core value without feature-list formatting.
+Never return this field below 90 words. Count the completed paragraph before output.
 
 ### overview.second_paragraph
 One paragraph.
-Target 95-115 words.
+Target 100-110 words to leave a safety buffer.
 Hard HSWare quality range: 90-125 words.
 Add different useful context: workflow, compatibility, performance, integration, limitations, or technical behavior.
 Do not repeat the introduction.
+Never return this field below 90 words. Count the completed paragraph before output.
 
 ### overview.benefits_heading
 Return exactly:
@@ -195,22 +208,17 @@ Return exactly:
 Do not alter wording or punctuation unless the runtime prompt explicitly changes it.
 
 ### overview.third_paragraph
-This is the legacy Third Paragraph field, but HSWare 3.0 uses it as a benefits bullet list.
+This is the legacy Third Paragraph field, but HSWare 3.0.3 stores it as one
+normal-prose benefits paragraph.
 
-Return:
-- 5-7 plain-text bullet lines
-- each line begins with \`- \`
-- 120-190 words total
-- target roughly 130-170 words when possible
+Target 140-155 words to leave a safety buffer. The hard range is 120-190 words.
+Start with the most important practical user outcome, then explain concrete
+workflow, time/effort, control, reliability, compatibility, collaboration, or
+other benefits relevant to the software.
 
-Each bullet explains a practical user benefit such as workflow improvement, time/effort savings, control, reliability, compatibility, collaboration, or another concrete outcome.
-
-Do not use:
-- HTML
-- numbered lists
-- headings
-- generic promotional claims
-- repeated feature titles
+Do not use bullet lines, numbered lists, Markdown list syntax, HTML list tags,
+headings, generic promotional claims, or repeated feature titles. Never return
+this field below 120 words. Count the completed paragraph before output.
 
 ### wordpress_excerpt
 Create an original standalone excerpt.
@@ -240,6 +248,8 @@ Default HSWare behavior:
 - if FAQ is disabled: return exactly 8 distinct features; descriptions normally 70-85 words
 - titles: 2-5 words
 - each description must be 115 words or fewer
+- when FAQ is enabled, target 45-60 words per description and never return one below 35 words
+- when FAQ is disabled, target 70-85 words per description and never return one below 60 words
 
 Each feature must:
 1. name a concrete capability
@@ -251,7 +261,9 @@ Avoid vague standalone feature titles such as:
 - Powerful Features
 - Best Performance
 
-Before output, count every feature and independently count each description's words. Rewrite internally if a required count/range is missed.
+Before output, count every feature and independently count every description's
+words. A single short description blocks the entire result, so rewrite any
+description below its hard minimum before returning JSON.
 
 ## FAQ
 
@@ -331,7 +343,7 @@ This is strict.
 
 HSWare supplies the current \`EXISTING WORDPRESS CATEGORY NAMES\` list at runtime.
 
-Return exactly 3 category NAME strings unless the runtime prompt explicitly changes the count.
+Return exactly 2 category NAME strings for the current HSWare workflow unless the runtime prompt explicitly changes the count.
 
 Rules:
 - use only exact names present in the supplied list
@@ -346,7 +358,7 @@ Rules:
 Before output:
 1. copy the runtime category whitelist
 2. verify each selected category by exact string equality
-3. verify there are exactly 3 unique category names
+3. verify there are exactly 2 unique category names for the current HSWare workflow
 4. if any candidate is not in the whitelist, replace it with the next most relevant exact existing name
 
 This category validation is mandatory. A semantically good category that is absent from the supplied list is invalid.
@@ -372,11 +384,20 @@ When ALT Text Count is blank and the runtime contract requests an empty array, r
 
 ## Keyword Control
 
-When HSWare requests focus-keyword density, aim naturally around the runtime target, normally 1.0%-1.5% across generated content.
+When HSWare requests focus-keyword density, target 1.0%-1.2% across enabled
+article content. The WordPress safety range is 0.6%-2.2%, but do not use that
+outer range as a writing target and never return a generated result above 2.0%.
 
+After drafting, count exact whole-phrase occurrences case-insensitively and
+calculate \`occurrences / article_words * 100\` using only enabled article prose.
+Exclude metadata such as names, versions, URLs, categories, tags, and ALT text.
+If density is above 1.2%, remove exact-match repetitions from features or FAQs
+and use natural pronouns or descriptive alternatives. If it is below 1.0%, add
+the exact phrase only in genuinely useful sentences. Recount after every edit.
 Do not sacrifice readability or force the keyword into FAQ answers merely to hit density.
 
-When the runtime prompt requires an exact occurrence check, count occurrences field by field before output.
+When the runtime prompt requires an exact occurrence check, perform the count
+after the final wording and before serializing the JSON.
 
 ## JSON Safety
 
@@ -406,19 +427,22 @@ Do not send the result until all applicable checks pass:
 8. \`overview.intro\` satisfies its required range.
 9. \`overview.second_paragraph\` satisfies its required range.
 10. \`overview.benefits_heading\` exactly matches the required phrase.
-11. \`overview.third_paragraph\` contains 5-7 benefit bullets and satisfies its total word range.
+11. \`overview.third_paragraph\` is one normal-prose benefits paragraph and satisfies its total word range.
 12. Feature count and each feature description satisfy the runtime contract.
 13. FAQ count satisfies the runtime contract.
 14. Every URL is one valid raw HTTP/HTTPS string or the allowed empty string.
 15. Locked URLs are preserved exactly.
 16. Old versions are deduplicated, exclude the current version, and are ordered correctly.
 17. \`seo.focus_keyword\` matches the supplied focus keyword exactly.
-18. Category suggestions contain exactly the required number of unique exact names from the runtime whitelist.
+18. Category suggestions contain exactly 2 unique exact names from the runtime whitelist unless the runtime explicitly overrides the count.
 19. WordPress tags satisfy the requested count.
 20. ALT tags satisfy the exact requested count and character limit.
 21. Internal-link fields and placement satisfy the contract when active.
 22. No Markdown, notes, citations, or explanations exist outside JSON.
 23. The writing is original, research-informed, and not a sentence-by-sentence rewrite of a source.
+24. Intro, Second Paragraph, and Benefits Paragraph were independently counted and have a safety buffer above their hard minimums.
+25. Every feature description was independently counted; no description is below its applicable hard minimum.
+26. Exact Focus Keyword density was recalculated after all edits and is between 1.0%-1.2% when naturally achievable, never above 2.0%.
 
 If any check fails, repair only the failing part internally and run the checks again.
 
@@ -497,7 +521,14 @@ export function parseRuntime(runtimePrompt = '') {
   const altCountMatch = text.match(/ALT Text Count\s*:\s*(\d+)/i);
   const altTextCount = altCountMatch ? Number(altCountMatch[1]) : null;
 
-  return { enabledPanels: [...new Set(enabled)], focusKeyword, altTextCount };
+  const categoryCountMatch = text.match(
+    /(?:category_suggestions[^\n\r]*?exactly\s+(\d+)|exactly\s+(\d+)\s+(?:category\s+NAME\s+strings?|categories?))/i
+  );
+  const categoryCount = categoryCountMatch
+    ? Number(categoryCountMatch[1] || categoryCountMatch[2])
+    : 2;
+
+  return { enabledPanels: [...new Set(enabled)], focusKeyword, altTextCount, categoryCount };
 }
 
 function findFeatures(obj) {
@@ -600,7 +631,7 @@ export function validateCandidate({ candidateJson, runtimePrompt = '', focusKeyw
   // Category count and uniqueness; whitelist membership remains runtime-dependent.
   const cats = obj?.seo?.category_suggestions;
   if (Array.isArray(cats)) {
-    if (cats.length !== 3) errors.push(`category_suggestions count is ${cats.length}; expected 3 unless runtime overrides it.`);
+    if (cats.length !== runtime.categoryCount) errors.push(`category_suggestions count is ${cats.length}; expected ${runtime.categoryCount} unless runtime overrides it.`);
     if (new Set(cats).size !== cats.length) errors.push('category_suggestions contains duplicates.');
   }
 
@@ -640,26 +671,45 @@ export function validateCandidate({ candidateJson, runtimePrompt = '', focusKeyw
 
 const FAST_CONTRACT_INSTRUCTIONS = [
   'The current HSWare runtime prompt is authoritative for enabled panels, exact JSON schema, counts, locked URLs, categories, internal links and supplied facts.',
-  'INPUT FIRST: preserve every explicitly supplied structured fact and URL. Do not re-research or re-verify supplied fields unless the user explicitly requests it.',
-  'Research only genuinely missing critical facts required by active panels. Use at most one focused research pass and prefer official sources. Do not inspect every supplied link.',
+  'FAST PATH: treat the supplied Software Data / Research Seed and explicitly locked URLs as authoritative. Do not browse, search, inspect supplied links, or re-verify supplied fields.',
+  'If a permitted factual value is missing, use an empty string instead of researching. Fresh research belongs only to explicit strict/deep verification.',
   'Generate the complete JSON once. Perform one internal validation pass and repair only a failed field or section. Do not restart research or regenerate the whole article.',
   'Return exactly one valid JSON object using only keys from the runtime template. Omit disabled panels, explanations, Markdown fences and citations outside JSON.',
   'Keep every URL as one raw HTTP/HTTPS string. Preserve locked URLs character-for-character.',
-  'Target exact focus-keyword density around 1.0%-1.2% and remain inside the HSWare hard range of 0.6%-2.2%.',
+  'Target exact focus-keyword density around 1.0%-1.2%; never return above 2.0%.',
   'Obey all runtime word counts, feature/FAQ/category/tag/ALT counts and internal-link placement rules.'
 ];
+
+const STRICT_CONTRACT_INSTRUCTIONS = [
+  'The current HSWare runtime prompt is authoritative for enabled panels, exact JSON schema, counts, locked URLs, categories, internal links and supplied facts.',
+  'STRICT PATH: perform the fresh or deep verification explicitly requested by the user. Prefer official sources and preserve supplied values unless authoritative evidence shows they are wrong or stale.',
+  'Do not inspect every supplied link unnecessarily. Research only facts and links that require the requested verification.',
+  'Generate the complete JSON once, then call validate_hsware_json at most once when strict validation was explicitly requested.',
+  'Return exactly one valid JSON object using only keys from the runtime template. Omit disabled panels, explanations, Markdown fences and citations outside JSON.',
+  'Keep every URL as one raw HTTP/HTTPS string. Preserve locked URLs character-for-character.',
+  'Target exact focus-keyword density around 1.0%-1.2% and remain inside the HSWare safety range of 0.6%-2.2%.',
+  'Obey all runtime word counts, feature/FAQ/category/tag/ALT counts and internal-link placement rules.'
+];
+
+function hasSoftwareSeed(runtimePrompt = '') {
+  return /SOFTWARE\s+DATA\s*\/\s*RESEARCH\s+SEED\s*:/i.test(String(runtimePrompt || ''));
+}
 
 export function contractSummary(runtimePrompt = '', requestedMode = 'fast') {
   const runtime = parseRuntime(runtimePrompt);
   const mode = requestedMode === 'strict' ? 'strict' : 'fast';
+  const seedPresent = hasSoftwareSeed(runtimePrompt);
   const result = {
     mode,
     runtime,
-    instructions: FAST_CONTRACT_INSTRUCTIONS,
-    research_budget: mode === 'fast' ? 'one focused pass for missing critical facts only' : 'deep verification as explicitly requested',
+    instructions: mode === 'fast' ? FAST_CONTRACT_INSTRUCTIONS : STRICT_CONTRACT_INSTRUCTIONS,
+    research_budget: mode === 'fast'
+      ? (seedPresent ? 'none — supplied seed is authoritative; no web research or link inspection' : 'none — no web research; use permitted empty values for missing facts')
+      : 'fresh/deep verification as explicitly requested',
     validation: mode === 'fast' ? 'internal single pass; do not call validate_hsware_json' : 'call validate_hsware_json once after drafting when strict validation was requested',
+    latency_target: mode === 'fast' ? 'aim for a sub-30-second model response by avoiding all additional tool calls; Worker processing is local and near-instant' : 'latency is not optimized; verification may take longer',
     next_action: mode === 'fast'
-      ? 'Generate and return the final JSON now. Do not call another HSWare tool in this request.'
+      ? 'Generate and return the final JSON now. Do not call another HSWare tool, browser, web-search, or link-inspection tool in this request.'
       : 'Use the full specification, perform the requested verification, draft the JSON, then call validate_hsware_json once.'
   };
 

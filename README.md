@@ -1,19 +1,20 @@
-# HSWare Post MCP v3.2
+# HSWare Post MCP v3.2.1
 
 Developer: **Hammad Shujra**  
 Category: **Productivity**  
-Version: **3.2.0**
+Version: **3.2.1**
 
 Cloudflare Workers remote MCP server for the HSWare HSAI workflow.
 
-## v3.2 Fast-Default Workflow
+## v3.2.1 Fast-Default Workflow
 
 - `fast` is the default mode for normal generation.
 - One preparation tool call, followed by immediate JSON generation.
+- Fast mode is a no-browse path when the prompt includes a complete Software Data / Research Seed.
+- The client must not open supplied links, call web search, or call the validation tool in fast mode.
 - No automatic second validation tool call in fast mode.
 - User-supplied structured software data and URLs remain authoritative.
-- Research is limited to genuinely missing critical fields, with one focused pass by default.
-- Supplied links are not opened merely to reconfirm them.
+- Missing permitted values remain empty in fast mode; fresh research belongs to explicit `strict` mode.
 - Validation is performed internally once; only failed fields are repaired.
 - The contract response is compact and is no longer duplicated in both text and structured output.
 - `strict` remains available when the user explicitly requests deep verification or tool validation.
@@ -24,7 +25,7 @@ The Worker itself does not browse the web or call an AI model. It supplies instr
 
 ### Fast (default)
 
-Use for ordinary HSWare generation. The client calls `get_hsware_contract` once with `mode: "fast"`, performs at most one focused research pass for missing critical facts, and returns the final JSON without calling `validate_hsware_json`.
+Use for ordinary HSWare generation. The client calls `get_hsware_contract` once with `mode: "fast"`, performs no web or link-inspection calls, and returns the final JSON without calling `validate_hsware_json`.
 
 ### Strict (opt-in)
 

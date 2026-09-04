@@ -1,6 +1,6 @@
 import { contractSummary, validateCandidate } from './hsware.js';
 
-const VERSION = '3.2.0';
+const VERSION = '3.2.1';
 const SERVER_INFO = { name: 'hsware-post', version: VERSION };
 const DEVELOPER = 'Hammad Shujra';
 const CATEGORY = 'Productivity';
@@ -12,7 +12,7 @@ const TOOLS = [
   {
     name: 'get_hsware_contract',
     title: 'Prepare HSWare Generation',
-    description: 'Call once before generating HSWare JSON. FAST is the default: preserve supplied facts, research only critical gaps in one focused pass, generate immediately, and do not call another HSWare tool. Use STRICT only when the user explicitly requests deep verification or strict tool validation. Read-only.',
+    description: 'Call once before generating HSWare JSON. FAST is the default no-browse path: treat the supplied seed and locked URLs as authoritative, do not use web search or another HSWare tool, and generate immediately. Use STRICT only when the user explicitly requests fresh/deep verification or strict tool validation. Read-only.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -21,7 +21,7 @@ const TOOLS = [
           type: 'string',
           enum: ['fast', 'strict'],
           default: 'fast',
-          description: 'Use fast unless the user explicitly asks for strict or deep verification.'
+          description: 'Use fast for the under-30-second no-browse path. Use strict only when the user explicitly asks for fresh/deep verification.'
         }
       },
       required: ['runtime_prompt'],
@@ -84,7 +84,7 @@ async function handleRpc(msg) {
       protocolVersion: params.protocolVersion || '2025-06-18',
       capabilities: { tools: { listChanged: false } },
       serverInfo: SERVER_INFO,
-      instructions: 'FAST MODE IS DEFAULT. For a generation request, call get_hsware_contract exactly once with mode fast, then generate the final JSON immediately. Do not call validate_hsware_json in the same request unless the user explicitly asks for strict/deep validation or provides candidate JSON to validate. Preserve supplied structured facts and URLs. Research only genuinely missing critical fields, using at most one focused pass. Do not inspect every supplied link. Return JSON only.'
+      instructions: 'FAST MODE IS DEFAULT AND IS A NO-BROWSE PATH. For a generation request, call get_hsware_contract exactly once with mode fast, then generate the final JSON immediately. Treat the supplied Software Data / Research Seed and locked URLs as authoritative. Do not call browser/web search, do not inspect supplied links, and do not call validate_hsware_json in the same request. If a permitted factual value is missing, use an empty string instead of researching. Use strict only when the user explicitly asks for fresh/deep verification. Return JSON only.'
     });
   }
   if (method === 'notifications/initialized') return null;
