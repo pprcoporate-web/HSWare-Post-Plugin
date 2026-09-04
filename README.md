@@ -1,12 +1,12 @@
-# HSWare Post MCP v3.2.1
+# HSWare Post MCP v3.2.2
 
 Developer: **Hammad Shujra**  
 Category: **Productivity**  
-Version: **3.2.1**
+Version: **3.2.2**
 
 Cloudflare Workers remote MCP server for the HSWare HSAI workflow.
 
-## v3.2.1 Fast-Default Workflow
+## v3.2.2 Fast-Default Workflow
 
 - `fast` is the default mode for normal generation.
 - One preparation tool call, followed by immediate JSON generation.
@@ -15,6 +15,7 @@ Cloudflare Workers remote MCP server for the HSWare HSAI workflow.
 - No automatic second validation tool call in fast mode.
 - User-supplied structured software data and URLs remain authoritative.
 - Missing permitted values remain empty in fast mode; fresh research belongs to explicit `strict` mode.
+- The fast contract also requires the active HSWare quality gates: 6-8 features, at least 5 complete FAQs, feature descriptions at their applicable minimum, and density near 1.2% within the 1.0%-1.5% target.
 - Validation is performed internally once; only failed fields are repaired.
 - The contract response is compact and is no longer duplicated in both text and structured output.
 - `strict` remains available when the user explicitly requests deep verification or tool validation.

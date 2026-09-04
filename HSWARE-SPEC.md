@@ -29,7 +29,7 @@ For the current HSWare 3.0.3 WordPress Apply workflow, the normal contract is:
 - one normal-prose `overview.third_paragraph` benefits paragraph, not bullets
 - at least 5 FAQ items when `faq` is enabled
 - field-specific length gates; there is no required total article word count
-- target Focus Keyword density of 1.0%-1.2%, with a strict generation ceiling of 2.0%
+- target Focus Keyword density near 1.2%, staying within 1.0%-1.5%, with a strict generation ceiling of 2.0%
 
 If the current runtime prompt explicitly supplies a different count or range, that
 runtime instruction wins. Never silently revert to the older 3-category or
@@ -268,15 +268,15 @@ description below its hard minimum before returning JSON.
 ## FAQ
 
 When `faq` is enabled:
-- return at least 5 useful search-intent questions unless the runtime schema/count says otherwise
-- 5-8 is normally ideal
+- return 5-8 useful search-intent questions; use 8 when the active template provides 8 FAQ objects unless the runtime schema/count says otherwise
 - keep questions concise and natural
 - answer completely and factually
 - FAQ answers have no fixed word-count requirement unless the runtime prompt explicitly adds one
+- target roughly 25-50 words for an answer when the topic needs explanation; never return a fragment or one-word answer
 - do not pad answers to increase article length
 - do not invent unsupported facts
 
-Before output, count the FAQ items.
+Before output, count the FAQ items and verify every question and answer is present.
 
 ## Current Release and Downloads
 
@@ -384,20 +384,41 @@ When ALT Text Count is blank and the runtime contract requests an empty array, r
 
 ## Keyword Control
 
-When HSWare requests focus-keyword density, target 1.0%-1.2% across enabled
-article content. The WordPress safety range is 0.6%-2.2%, but do not use that
-outer range as a writing target and never return a generated result above 2.0%.
+When HSWare requests focus-keyword density, use a numerical occurrence budget;
+do not estimate the percentage from memory. HSAI blocks below 0.6% or above
+2.2%, while the usable target is 1.0%-1.5%. Aim near 1.2% and keep margin from
+both blocking boundaries. Never deliberately target the outer safety range and
+never return a generated result above 2.0%.
 
-After drafting, count exact whole-phrase occurrences case-insensitively and
-calculate `occurrences / article_words * 100` using only enabled article prose.
-Exclude metadata such as names, versions, URLs, categories, tags, and ALT text.
-If density is above 1.2%, remove exact-match repetitions from features or FAQs
-and use natural pronouns or descriptive alternatives. If it is below 1.0%, add
-the exact phrase only in genuinely useful sentences. Recount after every edit.
-Do not sacrifice readability or force the keyword into FAQ answers merely to hit density.
+Use HSAI's enabled article fields only: when `info` is enabled, count
+`software_info.short_description`, `overview.heading`, `overview.intro`,
+`overview.second_paragraph`, `overview.benefits_heading`, and
+`overview.third_paragraph`; when `features` is enabled, count every feature
+title and description; when `faq` is enabled, count every FAQ question and
+answer. Do not count `software_info.name`, other metadata, versions, file
+sizes, URLs, categories, WordPress tags, ALT text, `wordpress_excerpt`, or SEO
+metadata. Strip HTML, collapse whitespace, count whitespace-separated words,
+and count exact whole-focus-keyword matches case-insensitively in the same
+concatenated field text.
 
-When the runtime prompt requires an exact occurrence check, perform the count
-after the final wording and before serializing the JSON.
+Calculate `density = exact_occurrences / article_words * 100`. After all prose is
+final, let `W` be the HSAI-compatible article-word count and choose an integer
+occurrence count near `round(W * 0.012)`, constrained whenever possible by
+`ceil(W * 0.010) <= occurrences <= floor(W * 0.015)`. If the interval has no
+integer for a very short article, choose the nearest integer to `W * 0.012`
+that remains inside 0.6%-2.2%. Recount the actual final JSON, not a draft.
+
+If density is below 1.0%, add one exact keyword occurrence to a useful overview
+or feature sentence and recount. If it is above 1.5%, remove one exact
+occurrence from a feature or FAQ sentence and replace it with a natural
+alternative, then recount. Repeat until the final calculation is inside
+1.0%-1.5% and never above 2.0%. Do not put the keyword in every feature title
+or FAQ answer, and do not force an unnatural FAQ mention merely to change the
+percentage.
+
+Perform the final count after the last wording edit and immediately before JSON
+serialization. A result showing 0.57% or 2.3% is invalid and must not be
+returned.
 
 ## JSON Safety
 
@@ -442,7 +463,7 @@ Do not send the result until all applicable checks pass:
 23. The writing is original, research-informed, and not a sentence-by-sentence rewrite of a source.
 24. Intro, Second Paragraph, and Benefits Paragraph were independently counted and have a safety buffer above their hard minimums.
 25. Every feature description was independently counted; no description is below its applicable hard minimum.
-26. Exact Focus Keyword density was recalculated after all edits and is between 1.0%-1.2% when naturally achievable, never above 2.0%.
+26. Exact Focus Keyword density was recalculated using the HSAI-compatible field list and integer occurrence budget after all edits; it is between 1.0%-1.5%, preferably near 1.2%, and never above 2.0%.
 
 If any check fails, repair only the failing part internally and run the checks again.
 

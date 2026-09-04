@@ -32,7 +32,7 @@ test('initialize advertises fast mode without mandatory validation', async () =>
   assert.match(body.result.instructions, /FAST MODE IS DEFAULT/);
   assert.match(body.result.instructions, /NO-BROWSE PATH/);
   assert.match(body.result.instructions, /do not call validate_hsware_json/i);
-  assert.equal(body.result.serverInfo.version, '3.2.1');
+  assert.equal(body.result.serverInfo.version, '3.2.2');
 });
 
 test('tool schema defaults contract preparation to fast mode', async () => {
@@ -62,6 +62,9 @@ test('fast contract is compact and ends the tool chain', async () => {
   assert.match(payload.next_action, /Do not call another HSWare tool, browser, web-search/);
   assert.match(payload.research_budget, /none/);
   assert.match(payload.latency_target, /sub-30-second/);
+  assert.ok(payload.instructions.some(instruction => /8 feature objects/.test(instruction)));
+  assert.ok(payload.instructions.some(instruction => /45-60 words/.test(instruction)));
+  assert.ok(payload.instructions.some(instruction => /exact whole-phrase occurrences/.test(instruction)));
   assert.equal(body.result.structuredContent, undefined);
   assert.ok(new TextEncoder().encode(serialized).length < 5_000);
   assert.ok(elapsedMs < 250, `local fast contract took ${elapsedMs.toFixed(1)} ms`);
@@ -104,11 +107,47 @@ test('validator follows the runtime category count', async () => {
   assert.ok(payload.errors.some(error => error.includes('expected 3')));
 });
 
+test('validator catches omitted feature and FAQ content', async () => {
+  const candidate = JSON.stringify({ software_info: { short_description: 'A concise software description for testing.' } });
+  const runtime = 'Enabled: info, features, faq.';
+  const { body } = await rpc('tools/call', {
+    name: 'validate_hsware_json',
+    arguments: { candidate_json: candidate, runtime_prompt: runtime }
+  });
+  const payload = toolPayload(body);
+
+  assert.ok(payload.errors.some(error => error.includes('features count is 0')));
+  assert.ok(payload.errors.some(error => error.includes('FAQ count is 0')));
+});
+
+test('validator counts the same article fields as HSAI', async () => {
+  const candidate = JSON.stringify({
+    software_info: { short_description: 'dbxcli handles files.' },
+    overview: {
+      heading: 'Command line access',
+      intro: 'A focused paragraph explains the command workflow.',
+      second_paragraph: 'A separate paragraph describes compatible file operations.',
+      benefits_heading: 'Benefits of Using dbxcli',
+      third_paragraph: 'A practical paragraph explains control and repeatability.'
+    },
+    wordpress_excerpt: 'dbxcli dbxcli dbxcli dbxcli',
+    seo: { focus_keyword: 'dbxcli' }
+  });
+  const { body } = await rpc('tools/call', {
+    name: 'validate_hsware_json',
+    arguments: { candidate_json: candidate, runtime_prompt: 'Enabled: info. Focus Keyword: dbxcli' }
+  });
+  const payload = toolPayload(body);
+
+  assert.equal(payload.metrics.exactKeywordOccurrences, 2);
+  assert.equal(payload.metrics.articleWordCount, 31);
+});
+
 test('health endpoint reports the fast default release', async () => {
   const response = await worker.fetch(new Request('https://hsware.test/health'));
   const body = await response.json();
 
   assert.equal(response.status, 200);
-  assert.equal(body.version, '3.2.1');
+  assert.equal(body.version, '3.2.2');
   assert.equal(body.default_mode, 'fast');
 });

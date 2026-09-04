@@ -1,6 +1,6 @@
 {
   "name": "hsware-post-mcp-worker",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "private": true,
   "type": "module",
   "description": "HSWare Post fast-default MCP server for Cloudflare Workers.",

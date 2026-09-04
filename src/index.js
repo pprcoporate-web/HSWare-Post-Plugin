@@ -1,6 +1,6 @@
 import { contractSummary, validateCandidate } from './hsware.js';
 
-const VERSION = '3.2.1';
+const VERSION = '3.2.2';
 const SERVER_INFO = { name: 'hsware-post', version: VERSION };
 const DEVELOPER = 'Hammad Shujra';
 const CATEGORY = 'Productivity';

@@ -1,4 +1,4 @@
-# HSWare Post — Public Submission v3.2.1
+# HSWare Post — Public Submission v3.2.2
 
 ## Production endpoints after deployment
 Replace `<worker-host>` with the deployed `workers.dev` hostname.
@@ -19,12 +19,12 @@ Replace `<worker-host>` with the deployed `workers.dev` hostname.
 - Destructive actions: None.
 
 ## Tools
-1. `get_hsware_contract` — read-only; returns a compact fast-default no-browse generation contract, or the full specification only when strict mode is explicitly requested.
+1. `get_hsware_contract` — read-only; returns a compact fast-default no-browse generation contract with HSWare quality gates, or the full specification only when strict mode is explicitly requested.
 2. `validate_hsware_json` — read-only; validates candidate JSON and returns findings; not called automatically during fast generation.
 3. `hsware_health` — read-only diagnostic.
 
 ## Before submission
-- Deploy v3.2.1 and verify `/health`, `/privacy`, `/terms`, `/support`, and `/mcp`.
+- Deploy v3.2.2 and verify `/health`, `/privacy`, `/terms`, `/support`, and `/mcp`.
 - Replace any generic project-source wording with the exact public GitHub repository URL.
 - Make sure the developer/publisher name in the OpenAI submission is the legal or public identity you want shown.
 - Provide the required developer/support contact in the submission form.
